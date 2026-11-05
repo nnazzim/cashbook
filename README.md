@@ -107,8 +107,8 @@ Under **Settings -> Environment Variables**, add the following 4 environment var
 
 | Variable Name | Value | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://neondb_owner:npg_CKrstL95iQhV@ep-still-mountain-bez1bkab-pooler.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require` | Neon connection pooler for serverless queries |
-| `DIRECT_URL` | `postgresql://neondb_owner:npg_CKrstL95iQhV@ep-still-mountain-bez1bkab.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require` | Direct connection for Prisma schema sync/migrations |
+| `DATABASE_URL` | `postgresql://neondb_owner:npg_CKrstL95iQhV@ep-still-mountain-bez1bkab-pooler.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connect_timeout=15&connection_limit=5&pool_timeout=20` | Neon PgBouncer connection pooler with serverless pooling limits |
+| `DIRECT_URL` | `postgresql://neondb_owner:npg_CKrstL95iQhV@ep-still-mountain-bez1bkab.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require&connect_timeout=15` | Direct connection for Prisma schema sync/migrations |
 | `NEXTAUTH_SECRET` | `cashbook-secret-jwt-key-32-chars-long` | Secret used to sign session cookies |
 | `NEXTAUTH_URL` | `https://<your-project-name>.vercel.app` | Your deployed Vercel domain |
 
