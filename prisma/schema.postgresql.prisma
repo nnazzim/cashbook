@@ -1,0 +1,230 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String           @id @default(cuid())
+  name           String
+  email          String?          @unique
+  phone          String?          @unique
+  passwordHash   String?
+  businessType   String?          @default("Kirana / Retail Store")
+  currency       String           @default("INR")
+  language       String           @default("en")
+  avatarUrl      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  businesses     BusinessMember[]
+  books          BookMember[]
+  entries        Entry[]
+  activityLogs   ActivityLog[]
+  importJobs     ImportJob[]
+}
+
+model Business {
+  id           String           @id @default(cuid())
+  name         String
+  type         String           @default("Kirana / Retail Store")
+  currency     String           @default("INR")
+  logoUrl      String?
+  phone        String?
+  address      String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  members      BusinessMember[]
+  books        Book[]
+  categories   Category[]
+  paymentModes PaymentMode[]
+  activityLogs ActivityLog[]
+  invitations  Invitation[]
+}
+
+model BusinessMember {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  role       String   @default("OWNER") // OWNER, ADMIN, EDITOR, VIEWER
+  createdAt  DateTime @default(now())
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+}
+
+model Book {
+  id             String           @id @default(cuid())
+  businessId     String
+  name           String
+  type           String           @default("CASH") // CASH, CREDIT_DEBIT
+  currency       String           @default("INR")
+  initialBalance Float            @default(0)
+  isArchived     Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  business       Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  members        BookMember[]
+  entries        Entry[]
+  recurringEntries RecurringEntry[]
+  activityLogs   ActivityLog[]
+  importJobs     ImportJob[]
+  invitations    Invitation[]
+}
+
+model BookMember {
+  id        String   @id @default(cuid())
+  bookId    String
+  userId    String
+  role      String   @default("OWNER") // OWNER, ADMIN, EDITOR, VIEWER
+  createdAt DateTime @default(now())
+
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, userId])
+}
+
+model Category {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  type       String   @default("BOTH") // IN, OUT, BOTH
+  color      String   @default("#3b82f6")
+  icon       String   @default("Tag")
+  createdAt  DateTime @default(now())
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  entries    Entry[]
+}
+
+model PaymentMode {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  icon       String   @default("Wallet")
+  createdAt  DateTime @default(now())
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  entries    Entry[]
+}
+
+model Entry {
+  id              String       @id @default(cuid())
+  bookId          String
+  type            String       // IN, OUT
+  amount          Float
+  date            DateTime
+  time            String?      // HH:mm format
+  remark          String
+  categoryId      String?
+  categoryName    String?
+  paymentModeId   String?
+  paymentModeName String?
+  partyName       String?
+  partyPhone      String?
+  runningBalance  Float        @default(0)
+  createdBy       String
+  createdByName   String?
+  importId        String?
+  isDeleted       Boolean      @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  book            Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  category        Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  paymentMode     PaymentMode? @relation(fields: [paymentModeId], references: [id], onDelete: SetNull)
+  attachments     Attachment[]
+
+  @@index([bookId, date])
+  @@index([importId])
+  @@index([partyName])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  entryId   String
+  fileName  String
+  fileUrl   String
+  fileSize  Int?
+  mimeType  String?
+  createdAt DateTime @default(now())
+
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+}
+
+model RecurringEntry {
+  id              String       @id @default(cuid())
+  bookId          String
+  type            String       // IN, OUT
+  amount          Float
+  remark          String
+  categoryId      String?
+  categoryName    String?
+  paymentModeName String?
+  partyName       String?
+  frequency       String       @default("MONTHLY") // DAILY, WEEKLY, MONTHLY
+  nextRunDate     DateTime
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+
+  book            Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  businessId String?
+  bookId     String?
+  userId     String
+  userName   String?
+  action     String   // ENTRY_CREATED, ENTRY_UPDATED, ENTRY_DELETED, BOOK_CREATED, IMPORT_COMPLETED, IMPORT_UNDONE
+  details    String
+  createdAt  DateTime @default(now())
+
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  book       Book?     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id         String   @id @default(cuid())
+  businessId String?
+  bookId     String?
+  email      String?
+  phone      String?
+  role       String   @default("EDITOR")
+  status     String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  token      String   @unique
+  createdAt  DateTime @default(now())
+
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  book       Book?     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+model ImportJob {
+  id            String   @id @default(cuid())
+  userId        String
+  bookId        String
+  fileName      String
+  status        String   @default("COMPLETED") // PENDING, COMPLETED, UNDONE, FAILED
+  totalRows     Int      @default(0)
+  importedRows  Int      @default(0)
+  skippedRows   Int      @default(0)
+  errorRows     Int      @default(0)
+  errorLog      String?  // JSON string of errors
+  canUndoUntil  DateTime
+  isUndone      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book          Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,7 @@
+Date,Description,Amount,Type,Category,Mode,Party
+2026-11-01,Opening Cash Balance,10000,IN,Sales,Cash,Store
+2026-11-01,Electricity Bill Commercial,3200,OUT,Rent & Bills,UPI,Discom
+2026-11-02,GPay QR Receipts,7500,IN,Sales,UPI,Retail Customers
+2026-11-02,Dairy Milk Supplies,4200,OUT,Wholesale Inventory,Cheque,Mother Dairy
+2026-11-03,Card Swipe Settlement,11200,IN,Sales,Card,POS Swipe
+2026-11-03,Shop Rent Advance,15000,OUT,Rent & Bills,Bank Transfer,Mr. Khanna
