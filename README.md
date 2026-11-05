@@ -74,14 +74,52 @@ A full-stack modern digital cash-in / cash-out ledger web application built for 
 
 - **Framework**: Next.js 14 (App Router) + TypeScript
 - **Styling**: Tailwind CSS + Lucide Icons
-- **Database**: SQLite (dev.db) / PostgreSQL compatible via **Prisma ORM**
+- **Database**: PostgreSQL (Neon Serverless PostgreSQL) via **Prisma ORM** (also SQLite compatible for local dev)
+- **Hosting Target**: **Vercel**
 - **Authentication**: Phone OTP Mock + Email/Password + 1-Click Demo Login
 - **Spreadsheet Processing**: SheetJS (`xlsx`) + `exceljs`
-- **File Uploads**: Local storage (`public/uploads`)
+- **File Uploads**: Local storage (`public/uploads`) with serverless base64 fallback
 
 ---
 
-## 🚀 Quick Setup & Run
+## ☁️ Deploying to Vercel with Neon PostgreSQL
+
+The project is pre-configured and production-ready for deployment to **Vercel** with the **Neon PostgreSQL** database.
+
+### Step 1: Push Code to GitHub
+
+```bash
+cd /Users/mohammednazim/.gemini/antigravity/scratch/cashbook
+
+# If you haven't added a remote yet:
+git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>.git
+git branch -M main
+git push -u origin main
+```
+
+### Step 2: Import Project into Vercel
+1. Log in to [vercel.com](https://vercel.com) and click **"Add New..." > "Project"**.
+2. Select your imported GitHub repository.
+3. Keep the default Framework Preset as **Next.js**.
+
+### Step 3: Add Environment Variables in Vercel
+Under **Settings -> Environment Variables**, add the following 4 environment variables:
+
+| Variable Name | Value | Description |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://neondb_owner:npg_CKrstL95iQhV@ep-still-mountain-bez1bkab-pooler.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require` | Neon connection pooler for serverless queries |
+| `DIRECT_URL` | `postgresql://neondb_owner:npg_CKrstL95iQhV@ep-still-mountain-bez1bkab.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require` | Direct connection for Prisma schema sync/migrations |
+| `NEXTAUTH_SECRET` | `cashbook-secret-jwt-key-32-chars-long` | Secret used to sign session cookies |
+| `NEXTAUTH_URL` | `https://<your-project-name>.vercel.app` | Your deployed Vercel domain |
+
+> 💡 **Build Command**: The included `vercel.json` and `package.json` automatically run `prisma generate && next build`.
+
+### Step 4: Click "Deploy"
+Vercel will build and deploy the app. Once finished, open your live URL to start managing your ledger!
+
+---
+
+## 🚀 Local Development Setup
 
 ### 1. Prerequisites
 Node.js 18+ (tested on Node v20/v24).
