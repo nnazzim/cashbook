@@ -31,7 +31,6 @@ export default function Navbar() {
     theme,
     toggleTheme,
     currencySymbol,
-    setIsAuthModalOpen,
     setIsNewBookModalOpen,
     showToast,
     refreshUserData,
@@ -43,17 +42,6 @@ export default function Navbar() {
   const [newBizName, setNewBizName] = useState("");
   const [newBizType, setNewBizType] = useState("Kirana / Retail Store");
   const [isCreatingBiz, setIsCreatingBiz] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      await refreshUserData();
-      showToast({ title: "Logged out", message: "You have been logged out safely.", type: "info" });
-      router.push("/");
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const handleCreateBusiness = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +76,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand Logo & Business Selector */}
           <div className="flex items-center gap-3 md:gap-6">
-            <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
+            <Link href="/dashboard" className="flex items-center gap-2.5 group">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-emerald-500 p-0.5 shadow-md shadow-blue-500/20 group-hover:scale-105 transition">
                 <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[10px] flex items-center justify-center">
                   <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none">
@@ -233,26 +221,27 @@ export default function Navbar() {
                     </div>
 
                     <div className="border-t pt-1">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition font-medium"
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition font-medium"
                       >
-                        <LogOut className="w-4 h-4" />
-                        Logout
-                      </button>
+                        <Store className="w-4 h-4" />
+                        Ledger Overview
+                      </Link>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
+                <Link
+                  href="/dashboard"
                   className="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition flex items-center gap-1.5"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Login / Get Started</span>
-                </button>
+                  <BookOpen className="w-4 h-4" />
+                  <span>Open Ledger</span>
+                </Link>
               </div>
             )}
           </div>

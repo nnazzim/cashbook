@@ -14,30 +14,64 @@ export interface SessionUser {
 }
 
 export async function setSessionCookie(userId: string) {
-  const cookieStore = cookies();
-  const isSecure = process.env.NODE_ENV === "production" && (process.env.NEXTAUTH_URL?.startsWith("https") || false);
-  cookieStore.set(COOKIE_NAME, userId, {
-    httpOnly: true,
-    secure: isSecure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  });
+  try {
+    const cookieStore = cookies();
+    const isSecure = process.env.NODE_ENV === "production" && (process.env.NEXTAUTH_URL?.startsWith("https") || false);
+    cookieStore.set(COOKIE_NAME, userId, {
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+  } catch {
+    // Ignore in contexts where cookies are read-only
+  }
 }
 
 export async function clearSessionCookie() {
-  const cookieStore = cookies();
-  cookieStore.delete(COOKIE_NAME);
+  try {
+    const cookieStore = cookies();
+    cookieStore.delete(COOKIE_NAME);
+  } catch {
+    // Ignore
+  }
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const cookieStore = cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
+  let token: string | undefined;
+  try {
+    const cookieStore = cookies();
+    token = cookieStore.get(COOKIE_NAME)?.value;
+  } catch {
+    // Ignore
+  }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: token },
+    if (token) {
+      const user = await prisma.user.findUnique({
+        where: { id: token },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          businessType: true,
+          currency: true,
+          language: true,
+        },
+      });
+      if (user) return user;
+    }
+
+    // Auto-login without login process: Always resolve the primary finance ledger user
+    let defaultUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: "demo@cashbook.in" },
+          { name: { contains: "Nazim" } },
+        ],
+      },
       select: {
         id: true,
         name: true,
@@ -48,7 +82,62 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         language: true,
       },
     });
-    return user;
+
+    if (!defaultUser) {
+      defaultUser = await prisma.user.findFirst({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          businessType: true,
+          currency: true,
+          language: true,
+        },
+      });
+    }
+
+    if (!defaultUser) {
+      defaultUser = await prisma.user.create({
+        data: {
+          name: "Nazim Merchant",
+          email: "demo@cashbook.in",
+          phone: "9876543210",
+          businesses: {
+            create: {
+              role: "OWNER",
+              business: {
+                create: {
+                  name: "SSF Anakkayam Sector Finance ledger",
+                  type: "Services & Non-Profit",
+                  currency: "INR",
+                  books: {
+                    create: [
+                      {
+                        name: "Daily Counter Cashbook",
+                        type: "CASH",
+                        initialBalance: 0,
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          businessType: true,
+          currency: true,
+          language: true,
+        },
+      });
+    }
+
+    return defaultUser;
   } catch (error) {
     console.error("Error reading session user:", error);
     return null;
