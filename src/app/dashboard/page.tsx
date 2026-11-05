@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/layout/Sidebar";
 import NewBookModal from "@/components/modals/NewBookModal";
+import NewBusinessModal from "@/components/modals/NewBusinessModal";
 import ImportWizardModal from "@/components/modals/ImportWizardModal";
 import AuthModal from "@/components/modals/AuthModal";
 import { useApp } from "@/context/AppContext";
@@ -29,6 +30,9 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
+  Check,
+  Store,
   FileSpreadsheet,
 } from "lucide-react";
 
@@ -38,14 +42,18 @@ export default function DashboardPage() {
     user,
     loading,
     activeBusiness,
+    businesses,
+    setActiveBusiness,
     currencySymbol,
     t,
     setIsNewBookModalOpen,
+    setIsNewBusinessModalOpen,
     openImportModal,
     showToast,
     refreshUserData,
   } = useApp();
 
+  const [bizPickerOpen, setBizPickerOpen] = useState(false);
   const [books, setBooks] = useState<any[]>([]);
   const [fetchingBooks, setFetchingBooks] = useState(true);
   const [search, setSearch] = useState("");
@@ -148,19 +156,102 @@ export default function DashboardPage() {
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{activeBusiness?.type || "Business Ledger"}</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-0.5">
-                {activeBusiness?.name || "My Business"}
-              </h1>
+
+              <div className="relative mt-1 flex items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                  {activeBusiness?.name || "My Business"}
+                </h1>
+
+                {/* Business Switcher Dropdown button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setBizPickerOpen(!bizPickerOpen)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm transition"
+                    title="Switch or create business"
+                  >
+                    <Store className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="hidden sm:inline">Switch</span>
+                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                  </button>
+
+                  {bizPickerOpen && (
+                    <div
+                      className="absolute left-0 mt-2 w-72 rounded-2xl border bg-white dark:bg-slate-900 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95"
+                      onClick={() => setBizPickerOpen(false)}
+                    >
+                      <div className="flex items-center justify-between px-3 py-1.5 border-b mb-1">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                          All Businesses ({businesses.length})
+                        </span>
+                        <button
+                          onClick={() => setIsNewBusinessModalOpen(true)}
+                          className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-0.5"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>New</span>
+                        </button>
+                      </div>
+
+                      <div className="max-h-60 overflow-y-auto space-y-1 py-1">
+                        {businesses.map((b) => (
+                          <button
+                            key={b.id}
+                            onClick={() => {
+                              setActiveBusiness(b);
+                              setBizPickerOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition ${
+                              activeBusiness?.id === b.id
+                                ? "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-900"
+                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <div className="truncate">
+                              <div className="font-semibold truncate">{b.name}</div>
+                              <span className="text-[10px] text-slate-400">{b.type}</span>
+                            </div>
+                            {activeBusiness?.id === b.id && (
+                              <Check className="w-4 h-4 text-blue-600 shrink-0 ml-2" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="border-t mt-1 pt-1.5">
+                        <button
+                          onClick={() => {
+                            setBizPickerOpen(false);
+                            setIsNewBusinessModalOpen(true);
+                          }}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold transition"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Create Another Business</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <p className="text-xs text-slate-500 mt-1">
                 Manage all cashbooks, sales counters, and supplier dues in one place.
               </p>
             </div>
 
             {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+              <button
+                onClick={() => setIsNewBusinessModalOpen(true)}
+                className="px-3.5 py-2.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-300 shadow-sm transition flex items-center gap-1.5"
+              >
+                <Store className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>+ New Business</span>
+              </button>
+
               <button
                 onClick={() => openImportModal()}
-                className="px-4 py-2.5 rounded-xl border bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm transition flex items-center gap-2"
+                className="px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm transition flex items-center gap-1.5"
               >
                 <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                 <span>{t.importBook}</span>
@@ -267,16 +358,24 @@ export default function DashboardPage() {
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 {search ? "No books match your search term." : "Create your first cashbook to start tracking daily cashflows."}
               </p>
-              <div className="pt-2 flex justify-center gap-2">
+              <div className="pt-2 flex flex-wrap justify-center gap-2">
                 <button
                   onClick={() => setIsNewBookModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow"
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5"
                 >
-                  + Add New Book
+                  <Plus className="w-4 h-4" />
+                  <span>+ Create Book</span>
+                </button>
+                <button
+                  onClick={() => setIsNewBusinessModalOpen(true)}
+                  className="px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 font-semibold text-xs flex items-center gap-1.5"
+                >
+                  <Store className="w-4 h-4" />
+                  <span>+ New Business</span>
                 </button>
                 <button
                   onClick={() => openImportModal()}
-                  className="px-4 py-2 rounded-xl border text-xs font-semibold hover:bg-slate-50"
+                  className="px-4 py-2.5 rounded-xl border text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                 >
                   Import from Excel
                 </button>
@@ -414,6 +513,7 @@ export default function DashboardPage() {
       </div>
 
       <NewBookModal onBookCreated={() => { loadBooks(); refreshUserData(); }} />
+      <NewBusinessModal onBusinessCreated={() => { loadBooks(); refreshUserData(); }} />
       <ImportWizardModal onSuccess={() => { loadBooks(); refreshUserData(); }} />
       <AuthModal />
     </div>

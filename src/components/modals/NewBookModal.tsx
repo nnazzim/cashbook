@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { BookOpen, CreditCard, X, Check } from "lucide-react";
+import { BookOpen, CreditCard, X, Check, Store, Plus } from "lucide-react";
 
 export default function NewBookModal({
   onBookCreated,
@@ -12,19 +12,33 @@ export default function NewBookModal({
   const {
     isNewBookModalOpen,
     setIsNewBookModalOpen,
+    setIsNewBusinessModalOpen,
     activeBusiness,
+    businesses,
+    setActiveBusiness,
     currencySymbol,
     showToast,
     refreshUserData,
   } = useApp();
 
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string>("");
   const [name, setName] = useState("");
   const [type, setType] = useState<"CASH" | "CREDIT_DEBIT">("CASH");
   const [initialBalance, setInitialBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (activeBusiness?.id) {
+      setSelectedBusinessId(activeBusiness.id);
+    } else if (businesses.length > 0) {
+      setSelectedBusinessId(businesses[0].id);
+    }
+  }, [activeBusiness?.id, businesses]);
+
   if (!isNewBookModalOpen) return null;
+
+  const currentTargetBiz = businesses.find((b) => b.id === selectedBusinessId) || activeBusiness;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +46,10 @@ export default function NewBookModal({
       setError("Please provide a name for this book");
       return;
     }
-    if (!activeBusiness) {
-      setError("No active business selected");
+
+    const targetBizId = selectedBusinessId || activeBusiness?.id;
+    if (!targetBizId) {
+      setError("Please select or create a business first");
       return;
     }
 
@@ -45,7 +61,7 @@ export default function NewBookModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          businessId: activeBusiness.id,
+          businessId: targetBizId,
           name: name.trim(),
           type,
           initialBalance: parseFloat(initialBalance) || 0,
@@ -55,14 +71,17 @@ export default function NewBookModal({
       const data = await res.json();
       if (res.ok) {
         showToast({
-          title: "Book Created",
-          message: `'${name}' has been added to ${activeBusiness.name}`,
+          title: "Book Created!",
+          message: `'${name}' added to ${currentTargetBiz?.name || "your business"}`,
           type: "success",
         });
         setIsNewBookModalOpen(false);
         setName("");
         setInitialBalance("0");
         await refreshUserData();
+        if (currentTargetBiz && activeBusiness?.id !== currentTargetBiz.id) {
+          setActiveBusiness(currentTargetBiz);
+        }
         onBookCreated?.(data.book);
       } else {
         setError(data.error || "Failed to create book");
@@ -84,9 +103,14 @@ export default function NewBookModal({
           <X className="w-5 h-5" />
         </button>
 
+        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-1">
+          <BookOpen className="w-4 h-4" />
+          <span>New Ledger Book</span>
+        </div>
+
         <h3 className="text-xl font-extrabold tracking-tight">Add New Book</h3>
         <p className="text-xs text-slate-500 mt-1">
-          Create a separate ledger for shop counter, daily expenses, or credit dues.
+          Create a separate cashbook for shop sales, supplier dues, or daily counter cash.
         </p>
 
         {error && (
@@ -96,6 +120,44 @@ export default function NewBookModal({
         )}
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {/* Target Business Selector */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Target Business
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNewBookModalOpen(false);
+                  setIsNewBusinessModalOpen(true);
+                }}
+                className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                <span>+ New Business</span>
+              </button>
+            </div>
+            {businesses.length > 1 ? (
+              <select
+                value={selectedBusinessId}
+                onChange={(e) => setSelectedBusinessId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                {businesses.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} ({b.type})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <Store className="w-4 h-4 text-blue-600" />
+                <span className="truncate">{currentTargetBiz?.name || "SSF Anakkayam Sector Finance ledger"}</span>
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Book Name *
@@ -104,10 +166,10 @@ export default function NewBookModal({
               type="text"
               required
               autoFocus
-              placeholder="e.g. Counter Cash, Bank Account, Trip Expenses"
+              placeholder="e.g. Counter Cash, Bank Account, Trip Expenses, Supplier Khata"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="mt-1 w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 

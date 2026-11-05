@@ -108,11 +108,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Business ID and Book name are required" }, { status: 400 });
     }
 
-    const bizMember = await prisma.businessMember.findUnique({
+    let bizMember = await prisma.businessMember.findUnique({
       where: { businessId_userId: { businessId, userId: session.id } },
     });
-    if (!bizMember || (bizMember.role !== "OWNER" && bizMember.role !== "ADMIN")) {
-      return NextResponse.json({ error: "Only Owner or Admin can create books" }, { status: 403 });
+    if (!bizMember) {
+      bizMember = await prisma.businessMember.create({
+        data: { businessId, userId: session.id, role: "OWNER" },
+      });
     }
 
     const initBal = parseFloat(initialBalance) || 0;

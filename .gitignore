@@ -10,3 +10,4 @@ out
 .env.production.local
 dev.db
 dev.db-journal
+.vercel

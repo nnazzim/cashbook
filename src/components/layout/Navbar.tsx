@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import NewBusinessModal from "@/components/modals/NewBusinessModal";
 import {
   BookOpen,
   ChevronDown,
@@ -32,43 +33,13 @@ export default function Navbar() {
     toggleTheme,
     currencySymbol,
     setIsNewBookModalOpen,
+    setIsNewBusinessModalOpen,
     showToast,
     refreshUserData,
   } = useApp();
 
   const [bizDropdownOpen, setBizDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [newBizModalOpen, setNewBizModalOpen] = useState(false);
-  const [newBizName, setNewBizName] = useState("");
-  const [newBizType, setNewBizType] = useState("Kirana / Retail Store");
-  const [isCreatingBiz, setIsCreatingBiz] = useState(false);
-
-  const handleCreateBusiness = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBizName.trim()) return;
-    setIsCreatingBiz(true);
-    try {
-      const res = await fetch("/api/businesses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newBizName.trim(), type: newBizType }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast({ title: "Business Created", message: `Business '${newBizName}' ready!`, type: "success" });
-        setNewBizModalOpen(false);
-        setNewBizName("");
-        await refreshUserData();
-        if (data.business) setActiveBusiness(data.business);
-      } else {
-        showToast({ title: "Error", message: data.error, type: "error" });
-      }
-    } catch (err: any) {
-      showToast({ title: "Error", message: err.message, type: "error" });
-    } finally {
-      setIsCreatingBiz(false);
-    }
-  };
 
   return (
     <>
@@ -142,7 +113,10 @@ export default function Navbar() {
 
                     <div className="border-t my-2 pt-2">
                       <button
-                        onClick={() => setNewBizModalOpen(true)}
+                        onClick={() => {
+                          setBizDropdownOpen(false);
+                          setIsNewBusinessModalOpen(true);
+                        }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
                       >
                         <Plus className="w-4 h-4" />
@@ -248,66 +222,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* New Business Modal */}
-      {newBizModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border shadow-2xl p-6">
-            <h3 className="text-lg font-bold">Create New Business</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Add a shop, freelancing profile, or personal ledger.
-            </p>
-            <form onSubmit={handleCreateBusiness} className="mt-4 space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Business / Store Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Metro Mart, Personal Ledger"
-                  value={newBizName}
-                  onChange={(e) => setNewBizName(e.target.value)}
-                  className="mt-1 w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Business Type
-                </label>
-                <select
-                  value={newBizType}
-                  onChange={(e) => setNewBizType(e.target.value)}
-                  className="mt-1 w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="Kirana / Retail Store">Kirana / Retail Store</option>
-                  <option value="Services & Consultancy">Services & Consultancy</option>
-                  <option value="Personal & Family">Personal & Family</option>
-                  <option value="Wholesale & Distribution">Wholesale & Distribution</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t">
-                <button
-                  type="button"
-                  onClick={() => setNewBizModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreatingBiz}
-                  className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow transition"
-                >
-                  {isCreatingBiz ? "Creating..." : "Create Business"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <NewBusinessModal />
     </>
   );
 }

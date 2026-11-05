@@ -41,9 +41,12 @@ interface AppContextType {
   showToast: (toast: Omit<ToastItem, "id">) => void;
   removeToast: (id: string) => void;
   refreshUserData: () => Promise<void>;
+  createBusiness: (data: { name: string; type?: string; currency?: string; initialBookName?: string }) => Promise<any>;
   // Modals trigger state
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
+  isNewBusinessModalOpen: boolean;
+  setIsNewBusinessModalOpen: (open: boolean) => void;
   isNewBookModalOpen: boolean;
   setIsNewBookModalOpen: (open: boolean) => void;
   isImportModalOpen: boolean;
@@ -78,6 +81,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Modals
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isNewBusinessModalOpen, setIsNewBusinessModalOpen] = useState(false);
   const [isNewBookModalOpen, setIsNewBookModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importTargetBookId, setImportTargetBookId] = useState<string | undefined>(undefined);
@@ -159,6 +163,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const createBusiness = async (params: {
+    name: string;
+    type?: string;
+    currency?: string;
+    initialBookName?: string;
+  }) => {
+    const res = await fetch("/api/businesses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to create business");
+    }
+    await refreshUserData();
+    if (data.business) {
+      setActiveBusiness(data.business);
+    }
+    return data.business;
+  };
+
   useEffect(() => {
     // Check saved theme
     if (typeof window !== "undefined") {
@@ -197,8 +223,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         showToast,
         removeToast,
         refreshUserData,
+        createBusiness,
         isAuthModalOpen,
         setIsAuthModalOpen,
+        isNewBusinessModalOpen,
+        setIsNewBusinessModalOpen,
         isNewBookModalOpen,
         setIsNewBookModalOpen,
         isImportModalOpen,
