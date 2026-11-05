@@ -15,9 +15,10 @@ export interface SessionUser {
 
 export async function setSessionCookie(userId: string) {
   const cookieStore = cookies();
+  const isSecure = process.env.NODE_ENV === "production" && (process.env.NEXTAUTH_URL?.startsWith("https") || false);
   cookieStore.set(COOKIE_NAME, userId, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30, // 30 days

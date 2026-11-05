@@ -14,7 +14,7 @@ async function request(urlPath, options = {}) {
     headers,
   });
 
-  const setCookie = res.headers.get("set-cookie");
+  const setCookie = (res.headers.getSetCookie ? res.headers.getSetCookie()[0] : null) || res.headers.get("set-cookie");
   if (setCookie) {
     sessionCookie = setCookie.split(";")[0];
   }
