@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/layout/Sidebar";
 import AuthModal from "@/components/modals/AuthModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { useApp } from "@/context/AppContext";
 import {
   Settings,
@@ -20,6 +21,7 @@ import {
   Shield,
   Bell,
   Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -32,9 +34,11 @@ export default function SettingsPage() {
     setCurrency,
     showToast,
     refreshUserData,
+    deleteBusiness,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<"PROFILE" | "BUSINESS" | "CATEGORIES" | "MODES" | "BACKUP">("PROFILE");
+  const [isDeleteBizModalOpen, setIsDeleteBizModalOpen] = useState(false);
 
   // Profile Form State
   const [name, setName] = useState("");
@@ -45,6 +49,16 @@ export default function SettingsPage() {
   const [bizName, setBizName] = useState("");
   const [bizType, setBizType] = useState("");
   const [isSavingBiz, setIsSavingBiz] = useState(false);
+
+  const handleDeleteBusiness = async () => {
+    if (!activeBusiness?.id) return;
+    await deleteBusiness(activeBusiness.id);
+    showToast({
+      title: "Business Deleted",
+      message: `'${activeBusiness.name}' and all associated books have been deleted`,
+      type: "info",
+    });
+  };
 
   // Categories & Modes State
   const [categories, setCategories] = useState<any[]>([]);
@@ -346,6 +360,29 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
+
+              {/* Danger Zone: Delete Business */}
+              {activeBusiness && (
+                <div className="mt-8 pt-6 border-t border-red-100 dark:border-red-950/60">
+                  <div className="p-4 rounded-2xl bg-red-50/60 dark:bg-red-950/20 border border-red-200 dark:border-red-900 space-y-3">
+                    <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>Danger Zone: Delete Business</span>
+                    </div>
+                    <p className="text-xs text-red-600 dark:text-red-300 leading-relaxed">
+                      Permanently delete <strong>&quot;{activeBusiness?.name}&quot;</strong> and all of its associated cashbooks, records, and categories. This action cannot be undone.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsDeleteBizModalOpen(true)}
+                      className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow transition flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete &quot;{activeBusiness?.name}&quot;</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -501,6 +538,13 @@ export default function SettingsPage() {
         </main>
       </div>
 
+      <ConfirmDeleteModal
+        isOpen={isDeleteBizModalOpen}
+        onClose={() => setIsDeleteBizModalOpen(false)}
+        onConfirm={handleDeleteBusiness}
+        itemType="business"
+        itemName={activeBusiness?.name || "this business"}
+      />
       <AuthModal />
     </div>
   );

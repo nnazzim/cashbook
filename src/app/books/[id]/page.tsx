@@ -8,6 +8,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import LedgerTable from "@/components/ledger/LedgerTable";
 import ImportWizardModal from "@/components/modals/ImportWizardModal";
 import AuthModal from "@/components/modals/AuthModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { useApp } from "@/context/AppContext";
 import {
   ChevronLeft,
@@ -19,6 +20,7 @@ import {
   Share2,
   Calendar,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 export default function BookDetailPage() {
@@ -26,11 +28,22 @@ export default function BookDetailPage() {
   const router = useRouter();
   const bookId = params.id as string;
 
-  const { activeBusiness, openImportModal, currencySymbol } = useApp();
+  const { activeBusiness, openImportModal, currencySymbol, deleteBook, showToast } = useApp();
 
   const [bookDetails, setBookDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const handleDeleteBook = async () => {
+    await deleteBook(bookId);
+    showToast({
+      title: "Book Deleted",
+      message: `'${bookDetails?.name || "Book"}' has been deleted`,
+      type: "info",
+    });
+    router.push("/dashboard");
+  };
 
   const fetchBook = async () => {
     setLoading(true);
@@ -134,6 +147,15 @@ export default function BookDetailPage() {
                     <Download className="w-4 h-4 text-blue-600" />
                     <span>Download Excel</span>
                   </a>
+
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="px-3.5 py-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 text-xs font-semibold text-red-600 dark:text-red-400 shadow-sm flex items-center gap-1.5 transition"
+                    title="Delete this book"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <span>Delete Book</span>
+                  </button>
                 </div>
               </div>
 
@@ -149,6 +171,13 @@ export default function BookDetailPage() {
         </main>
       </div>
 
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteBook}
+        itemType="book"
+        itemName={bookDetails?.name || "this book"}
+      />
       <ImportWizardModal onSuccess={fetchBook} />
       <AuthModal />
     </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import NewBusinessModal from "@/components/modals/NewBusinessModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import {
   BookOpen,
   ChevronDown,
@@ -18,6 +19,7 @@ import {
   Store,
   Layers,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -36,10 +38,22 @@ export default function Navbar() {
     setIsNewBusinessModalOpen,
     showToast,
     refreshUserData,
+    deleteBusiness,
   } = useApp();
 
   const [bizDropdownOpen, setBizDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [deleteBizTarget, setDeleteBizTarget] = useState<any | null>(null);
+
+  const handleDeleteBiz = async () => {
+    if (!deleteBizTarget) return;
+    await deleteBusiness(deleteBizTarget.id);
+    showToast({
+      title: "Business Deleted",
+      message: `'${deleteBizTarget.name}' has been deleted`,
+      type: "info",
+    });
+  };
 
   return (
     <>
@@ -91,23 +105,41 @@ export default function Navbar() {
                     </div>
                     <div className="max-h-56 overflow-y-auto space-y-1">
                       {businesses.map((b) => (
-                        <button
+                        <div
                           key={b.id}
-                          onClick={() => setActiveBusiness(b)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs sm:text-sm transition ${
+                          className={`group/biz flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs sm:text-sm transition ${
                             activeBusiness?.id === b.id
                               ? "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-semibold"
                               : "hover:bg-slate-50 dark:hover:bg-slate-800"
                           }`}
                         >
-                          <div className="truncate">
-                            <div>{b.name}</div>
+                          <button
+                            onClick={() => {
+                              setActiveBusiness(b);
+                              setBizDropdownOpen(false);
+                            }}
+                            className="flex-1 text-left truncate mr-2"
+                          >
+                            <div className="truncate">{b.name}</div>
                             <span className="text-[10px] text-slate-400 capitalize">{b.type}</span>
+                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {activeBusiness?.id === b.id && (
+                              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBizDropdownOpen(false);
+                                setDeleteBizTarget(b);
+                              }}
+                              title={`Delete ${b.name}`}
+                              className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/60 transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                          {activeBusiness?.id === b.id && (
-                            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                          )}
-                        </button>
+                        </div>
                       ))}
                     </div>
 
@@ -223,6 +255,13 @@ export default function Navbar() {
       </header>
 
       <NewBusinessModal />
+      <ConfirmDeleteModal
+        isOpen={!!deleteBizTarget}
+        onClose={() => setDeleteBizTarget(null)}
+        onConfirm={handleDeleteBiz}
+        itemType="business"
+        itemName={deleteBizTarget?.name || ""}
+      />
     </>
   );
 }

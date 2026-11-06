@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import {
   BookOpen,
   Users,
@@ -18,6 +19,7 @@ import {
   Store,
   Plus,
   Check,
+  Trash2,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -30,7 +32,21 @@ export default function Sidebar() {
     activeBusiness,
     businesses,
     setActiveBusiness,
+    deleteBusiness,
+    showToast,
   } = useApp();
+
+  const [deleteBizTarget, setDeleteBizTarget] = useState<any | null>(null);
+
+  const handleDeleteBiz = async () => {
+    if (!deleteBizTarget) return;
+    await deleteBusiness(deleteBizTarget.id);
+    showToast({
+      title: "Business Deleted",
+      message: `'${deleteBizTarget.name}' has been deleted`,
+      type: "info",
+    });
+  };
 
   const navLinks = [
     {
@@ -141,21 +157,35 @@ export default function Sidebar() {
             {businesses.map((biz) => {
               const isSelected = activeBusiness?.id === biz.id;
               return (
-                <button
+                <div
                   key={biz.id}
-                  onClick={() => setActiveBusiness(biz)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition ${
+                  className={`group/biz w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition ${
                     isSelected
                       ? "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-900"
                       : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <div className="flex items-center gap-2 truncate">
+                  <button
+                    onClick={() => setActiveBusiness(biz)}
+                    className="flex items-center gap-2 truncate flex-1 text-left mr-1"
+                  >
                     <Store className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
                     <span className="truncate">{biz.name}</span>
+                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteBizTarget(biz);
+                      }}
+                      title={`Delete ${biz.name}`}
+                      className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/60 transition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 ml-1" />}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -183,6 +213,14 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteBizTarget}
+        onClose={() => setDeleteBizTarget(null)}
+        onConfirm={handleDeleteBiz}
+        itemType="business"
+        itemName={deleteBizTarget?.name || ""}
+      />
     </aside>
   );
 }

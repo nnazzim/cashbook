@@ -223,12 +223,24 @@ export async function DELETE(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get("businessId");
+    let businessId = searchParams.get("businessId");
+    if (!businessId) {
+      try {
+        const body = await req.json();
+        businessId = body.businessId;
+      } catch {}
+    }
     if (!businessId) return NextResponse.json({ error: "businessId is required" }, { status: 400 });
 
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+    });
+    if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
+
     await prisma.business.delete({ where: { id: businessId } });
-    return NextResponse.json({ success: true, message: "Business deleted" });
+    return NextResponse.json({ success: true, message: `Business '${business.name}' deleted successfully` });
   } catch (error: any) {
+    console.error("Delete business error:", error);
     return NextResponse.json({ error: error.message || "Failed to delete business" }, { status: 500 });
   }
 }

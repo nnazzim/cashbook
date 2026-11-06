@@ -42,6 +42,8 @@ interface AppContextType {
   removeToast: (id: string) => void;
   refreshUserData: () => Promise<void>;
   createBusiness: (data: { name: string; type?: string; currency?: string; initialBookName?: string }) => Promise<any>;
+  deleteBusiness: (businessId: string) => Promise<any>;
+  deleteBook: (bookId: string) => Promise<any>;
   // Modals trigger state
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
@@ -185,6 +187,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return data.business;
   };
 
+  const deleteBusiness = async (businessId: string) => {
+    const res = await fetch(`/api/businesses?businessId=${encodeURIComponent(businessId)}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to delete business");
+    }
+    setBusinesses((prev) => {
+      const remaining = prev.filter((b) => b.id !== businessId);
+      if (activeBusiness?.id === businessId) {
+        setActiveBusiness(remaining.length > 0 ? remaining[0] : null);
+      }
+      return remaining;
+    });
+    await refreshUserData();
+    return data;
+  };
+
+  const deleteBook = async (bookId: string) => {
+    const res = await fetch(`/api/books?bookId=${encodeURIComponent(bookId)}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to delete book");
+    }
+    await refreshUserData();
+    return data;
+  };
+
   useEffect(() => {
     // Check saved theme
     if (typeof window !== "undefined") {
@@ -224,6 +257,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         removeToast,
         refreshUserData,
         createBusiness,
+        deleteBusiness,
+        deleteBook,
         isAuthModalOpen,
         setIsAuthModalOpen,
         isNewBusinessModalOpen,

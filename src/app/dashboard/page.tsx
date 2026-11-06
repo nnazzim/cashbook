@@ -9,6 +9,7 @@ import NewBookModal from "@/components/modals/NewBookModal";
 import NewBusinessModal from "@/components/modals/NewBusinessModal";
 import ImportWizardModal from "@/components/modals/ImportWizardModal";
 import AuthModal from "@/components/modals/AuthModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { useApp } from "@/context/AppContext";
 import {
   BookOpen,
@@ -51,6 +52,8 @@ export default function DashboardPage() {
     openImportModal,
     showToast,
     refreshUserData,
+    deleteBusiness,
+    deleteBook,
   } = useApp();
 
   const [bizPickerOpen, setBizPickerOpen] = useState(false);
@@ -60,6 +63,32 @@ export default function DashboardPage() {
   const [sortBy, setSortBy] = useState<"RECENT" | "NAME" | "HIGH_BALANCE" | "LOW_BALANCE">("RECENT");
   const [showArchived, setShowArchived] = useState(false);
   const [activeMenuBookId, setActiveMenuBookId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "book" | "business";
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "book") {
+      await deleteBook(deleteTarget.id);
+      showToast({
+        title: "Book Deleted",
+        message: `'${deleteTarget.name}' has been deleted`,
+        type: "info",
+      });
+      loadBooks();
+    } else if (deleteTarget.type === "business") {
+      await deleteBusiness(deleteTarget.id);
+      showToast({
+        title: "Business Deleted",
+        message: `'${deleteTarget.name}' and all its books were deleted`,
+        type: "info",
+      });
+      loadBooks();
+    }
+  };
 
   // Fetch books for active business
   const loadBooks = async () => {
@@ -194,26 +223,45 @@ export default function DashboardPage() {
 
                       <div className="max-h-60 overflow-y-auto space-y-1 py-1">
                         {businesses.map((b) => (
-                          <button
+                          <div
                             key={b.id}
-                            onClick={() => {
-                              setActiveBusiness(b);
-                              setBizPickerOpen(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition ${
+                            className={`group/item w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition ${
                               activeBusiness?.id === b.id
                                 ? "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-900"
                                 : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                             }`}
                           >
-                            <div className="truncate">
+                            <button
+                              onClick={() => {
+                                setActiveBusiness(b);
+                                setBizPickerOpen(false);
+                              }}
+                              className="flex-1 text-left truncate mr-2"
+                            >
                               <div className="font-semibold truncate">{b.name}</div>
-                              <span className="text-[10px] text-slate-400">{b.type}</span>
+                              <span className="text-[10px] text-slate-400 font-normal">{b.type}</span>
+                            </button>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {activeBusiness?.id === b.id && (
+                                <Check className="w-4 h-4 text-blue-600" />
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBizPickerOpen(false);
+                                  setDeleteTarget({
+                                    type: "business",
+                                    id: b.id,
+                                    name: b.name,
+                                  });
+                                }}
+                                title={`Delete ${b.name}`}
+                                className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/60 transition"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            {activeBusiness?.id === b.id && (
-                              <Check className="w-4 h-4 text-blue-600 shrink-0 ml-2" />
-                            )}
-                          </button>
+                          </div>
                         ))}
                       </div>
 
@@ -232,6 +280,23 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Quick Delete Active Business Button */}
+                {activeBusiness && (
+                  <button
+                    onClick={() =>
+                      setDeleteTarget({
+                        type: "business",
+                        id: activeBusiness.id,
+                        name: activeBusiness.name,
+                      })
+                    }
+                    className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-400 hover:text-red-600 shadow-sm transition"
+                    title={`Delete '${activeBusiness.name}'`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               <p className="text-xs text-slate-500 mt-1">
@@ -444,6 +509,21 @@ export default function DashboardPage() {
                                 <Archive className="w-3.5 h-3.5 text-amber-500" />
                                 <span>{book.isArchived ? "Restore Book" : "Archive Book"}</span>
                               </button>
+
+                              <button
+                                onClick={() => {
+                                  setActiveMenuBookId(null);
+                                  setDeleteTarget({
+                                    type: "book",
+                                    id: book.id,
+                                    name: book.name,
+                                  });
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-left transition text-red-600 dark:text-red-400"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                                <span>Delete Book</span>
+                              </button>
                             </div>
                           )}
                         </div>
@@ -515,6 +595,13 @@ export default function DashboardPage() {
       <NewBookModal onBookCreated={() => { loadBooks(); refreshUserData(); }} />
       <NewBusinessModal onBusinessCreated={() => { loadBooks(); refreshUserData(); }} />
       <ImportWizardModal onSuccess={() => { loadBooks(); refreshUserData(); }} />
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        itemType={deleteTarget?.type || "book"}
+        itemName={deleteTarget?.name || ""}
+      />
       <AuthModal />
     </div>
   );

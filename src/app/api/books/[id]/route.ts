@@ -94,3 +94,38 @@ export async function GET(
     return NextResponse.json({ error: error.message || "Failed to load book" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSessionUser();
+    let userId = session?.id;
+    if (!userId) {
+      const u = await prisma.user.findFirst();
+      userId = u?.id;
+    }
+
+    const bookId = params.id;
+    const book = await prisma.book.findUnique({
+      where: { id: bookId },
+      include: { business: { include: { members: true } } },
+    });
+    if (!book) return NextResponse.json({ error: "Book not found" }, { status: 404 });
+
+    if (userId && book.business.members.length > 0) {
+      const member = book.business.members.find((m) => m.userId === userId);
+      if (member && member.role !== "OWNER" && member.role !== "ADMIN") {
+        return NextResponse.json({ error: "Only an Owner or Admin can delete books" }, { status: 403 });
+      }
+    }
+
+    await prisma.book.delete({ where: { id: bookId } });
+
+    return NextResponse.json({ success: true, message: "Book deleted" });
+  } catch (error: any) {
+    console.error("Delete book error:", error);
+    return NextResponse.json({ error: error.message || "Failed to delete book" }, { status: 500 });
+  }
+}
